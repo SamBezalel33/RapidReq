@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RAPIDREQ - Emergency Dispatch System{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <div class="brand-container">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-truck-medical pulse-beacon"></i>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-name">RAPIDREQ</span>
+                    <span class="brand-tagline">Priority Dispatch</span>
+                </div>
+            </div>
+
+            <div class="priority-legend-sidebar">
+                <div class="legend-header">Priority Scale</div>
+                <div class="legend-item"><span class="badge badge-p1">P1</span> Critical (Immediate)</div>
+                <div class="legend-item"><span class="badge badge-p2">P2</span> High Urgency</div>
+                <div class="legend-item"><span class="badge badge-p3">P3</span> Medium Urgency</div>
+                <div class="legend-item"><span class="badge badge-p4">P4</span> Low / Non-urgent</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-title">MAIN NAVIGATION</div>
+                <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Home Overview</span>
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    <span>Dispatch Dashboard</span>
+                </a>
+                <a href="{{ url_for('submit_request') }}" class="nav-link {% if request.endpoint == 'submit_request' %}active{% endif %}">
+                    <i class="fa-solid fa-circle-plus"></i>
+                    <span>Submit Emergency</span>
+                </a>
+                <a href="{{ url_for('requests_page') }}" class="nav-link {% if request.endpoint == 'requests_page' %}active{% endif %}">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Emergency Requests</span>
+                </a>
+                <a href="{{ url_for('analytics_page') }}" class="nav-link {% if request.endpoint == 'analytics_page' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Analytics & Charts</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="academic-note">
+                    <div class="note-badge"><i class="fa-solid fa-graduation-cap"></i> Academic Demo</div>
+                    <p>Uses Python <strong>Priority Queue</strong> with FIFO tie-breaker.</p>
+                </div>
+                <a href="{{ url_for('reset_demo_queue') }}" class="btn-demo-preset" title="Load sample queue (R201, R202, R203, R204) for professor evaluation">
+                    <i class="fa-solid fa-flask-vial"></i> Load Viva Test Queue
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Top Header Bar -->
+            <header class="app-topbar">
+                <div class="topbar-title">
+                    <h1>RAPIDREQ</h1>
+                    <span class="sub-headline">Priority-Based Emergency Request & Dispatch System</span>
+                </div>
+                <div class="topbar-actions">
+                    <div class="status-indicator">
+                        <span class="status-dot green"></span>
+                        <span>Dispatcher Engine Online</span>
+                    </div>
+                    <a href="{{ url_for('submit_request') }}" class="btn-topbar-emergency">
+                        <i class="fa-solid fa-bell"></i> Report Emergency
+                    </a>
+                </div>
+            </header>
+
+            <!-- Flash Alert Messages -->
+            <div class="content-container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <div class="alert-icon">
+                                        {% if category == 'success' %}
+                                            <i class="fa-solid fa-circle-check"></i>
+                                        {% elif category == 'danger' %}
+                                            <i class="fa-solid fa-triangle-exclamation"></i>
+                                        {% elif category == 'warning' %}
+                                            <i class="fa-solid fa-circle-exclamation"></i>
+                                        {% else %}
+                                            <i class="fa-solid fa-circle-info"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="alert-text">{{ message }}</div>
+                                    <button class="alert-close" onclick="this.parentElement.remove();">&times;</button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Dynamic Page Content -->
+                {% block content %}{% endblock %}
+            </div>
+
+            <!-- Global Footer -->
+            <footer class="app-footer">
+                <div class="footer-left">
+                    <span>RAPIDREQ &bull; Master's Data Science Project (Data Structures: Priority Queue)</span>
+                </div>
+                <div class="footer-right">
+                    <span>Stack: Python / Flask &bull; MySQL &bull; Chart.js</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Dashboard & Global Scripts -->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

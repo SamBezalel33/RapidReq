@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Home Overview - RAPIDREQ Emergency Dispatch System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title">Welcome to RAPIDREQ</h2>
+        <p class="page-subtitle">Priority-Based Emergency Request & Dispatch System</p>
+    </div>
+    <div class="header-badges">
+        <span class="pill pill-academic"><i class="fa-solid fa-code-branch"></i> Data Structures: Priority Queue</span>
+        <span class="pill pill-db"><i class="fa-solid fa-database"></i> MySQL Connected</span>
+    </div>
+</div>
+
+<!-- Project Concept Highlight Banner -->
+<div class="concept-hero-card">
+    <div class="hero-left">
+        <div class="hero-tag"><i class="fa-solid fa-shield-heart"></i> Core Academic Concept</div>
+        <h3>Why a Priority Queue instead of standard FIFO?</h3>
+        <p>
+            In normal queues (First-In, First-Out), requests are processed strictly by arrival time. 
+            However, in emergency dispatch, <strong>a life-threatening Accident (Priority 1) arriving at 10:05 AM must NOT wait</strong> 
+            behind a minor sprain (Priority 4) that arrived at 10:00 AM.
+        </p>
+        <p>
+            RAPIDREQ uses an explicit <strong>Priority Queue</strong> where the highest urgency (lowest numerical priority value: 1 = Critical) 
+            is always dispatched first. When priorities are tied, <strong>FIFO order is preserved</strong> to ensure fair processing.
+        </p>
+        <div class="hero-buttons">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary"><i class="fa-solid fa-gauge-high"></i> Go to Dispatcher Dashboard</a>
+            <a href="{{ url_for('submit_request') }}" class="btn btn-emergency"><i class="fa-solid fa-triangle-exclamation"></i> Submit Emergency</a>
+        </div>
+    </div>
+    <div class="hero-right">
+        <div class="comparison-box">
+            <div class="comp-title">The Emergency Dispatch Difference</div>
+            <div class="comp-item comp-wrong">
+                <div class="comp-header"><i class="fa-solid fa-xmark"></i> Standard FIFO Queue</div>
+                <div class="comp-body">Processes simply by arrival time. Critical cardiac arrest waits behind minor cat rescue!</div>
+            </div>
+            <div class="comp-item comp-right">
+                <div class="comp-header"><i class="fa-solid fa-check"></i> RAPIDREQ Priority Queue</div>
+                <div class="comp-body">Critical (P1) jumps directly to the head of the dispatch queue, saving lives.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary KPI Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon icon-total"><i class="fa-solid fa-clipboard-list"></i></div>
+        <div class="stat-info">
+            <span class="stat-value">{{ summary.total }}</span>
+            <span class="stat-label">Total Requests</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon icon-pending"><i class="fa-solid fa-clock"></i></div>
+        <div class="stat-info">
+            <span class="stat-value">{{ summary.pending }}</span>
+            <span class="stat-label">Pending In Queue</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon icon-dispatched"><i class="fa-solid fa-truck-fast"></i></div>
+        <div class="stat-info">
+            <span class="stat-value">{{ summary.dispatched }}</span>
+            <span class="stat-label">Dispatched (Active)</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon icon-completed"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-info">
+            <span class="stat-value">{{ summary.completed }}</span>
+            <span class="stat-label">Completed</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon icon-response"><i class="fa-solid fa-stopwatch"></i></div>
+        <div class="stat-info">
+            <span class="stat-value">{{ summary.avg_response_time }}s</span>
+            <span class="stat-label">Avg Response Time</span>
+        </div>
+    </div>
+</div>
+
+<!-- Two Column Overview Grid -->
+<div class="grid-2-col">
+    <!-- Queue Snapshot Preview -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fa-solid fa-layer-group text-danger"></i> Next Emergencies in Priority Queue
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="card-link">View Full Queue &rarr;</a>
+        </div>
+        <div class="card-body">
+            {% if queue_preview %}
+                <div class="queue-list-mini">
+                    {% for item in queue_preview %}
+                        <div class="queue-item-mini priority-border-{{ item.priority }}">
+                            <div class="mini-pos">#{{ loop.index }}</div>
+                            <div class="mini-info">
+                                <div class="mini-title">
+                                    <strong>{{ item.request_id }}</strong> &bull; {{ item.emergency_type }}
+                                </div>
+                                <div class="mini-meta">
+                                    <i class="fa-solid fa-location-dot"></i> {{ item.location }} &bull; {{ item.request_time }}
+                                </div>
+                            </div>
+                            <div class="mini-badge">
+                                <span class="badge badge-p{{ item.priority }}">
+                                    Priority {{ item.priority }} ({{ item.priority_label }})
+                                </span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fa-solid fa-inbox fa-2x"></i>
+                    <p>Priority Queue is currently empty. All pending emergencies have been dispatched!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Data Flow Diagram -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fa-solid fa-diagram-project text-primary"></i> RapidReq System Flow
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                        <strong>User Submits Emergency</strong>
+                        <p>Location, type, contact, and urgency selected.</p>
+                    </div>
+                </div>
+                <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                <div class="flow-step">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                        <strong>Backend Enqueue</strong>
+                        <p>Priority Queue inserts item using (Priority, Arrival Order) logic.</p>
+                    </div>
+                </div>
+                <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                <div class="flow-step">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                        <strong>Dispatcher Clicks "Dispatch Next"</strong>
+                        <p>Pops O(1) top emergency. Computes response time and updates MySQL.</p>
+                    </div>
+                </div>
+                <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                <div class="flow-step">
+                    <div class="step-num">4</div>
+                    <div class="step-text">
+                        <strong>Analytics & Visualization</strong>
+                        <p>Real-time Chart.js graphs update automatically from MySQL tables.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

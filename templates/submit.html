@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Emergency Request - RAPIDREQ{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title"><i class="fa-solid fa-triangle-exclamation text-danger"></i> Submit Emergency Request</h2>
+        <p class="page-subtitle">File an urgent incident report. The backend Priority Queue will immediately place it according to urgency.</p>
+    </div>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<div class="submit-form-container">
+    <div class="form-card">
+        <div class="form-card-header">
+            <h3>Emergency Incident Intake</h3>
+            <p>Ensure critical details (phone, location, priority) are accurate.</p>
+        </div>
+
+        <form action="{{ url_for('submit_request') }}" method="POST" id="emergencyForm">
+            <div class="form-grid">
+                <!-- Request ID -->
+                <div class="form-group">
+                    <label for="request_id">
+                        <i class="fa-solid fa-hashtag"></i> Request ID
+                        <span class="label-hint">(Auto-generated or custom)</span>
+                    </label>
+                    <input type="text" id="request_id" name="request_id" class="form-control" value="{{ suggested_id }}" required>
+                </div>
+
+                <!-- Emergency Type -->
+                <div class="form-group">
+                    <label for="emergency_type">
+                        <i class="fa-solid fa-truck-medical"></i> Emergency Type <span class="required">*</span>
+                    </label>
+                    <select id="emergency_type" name="emergency_type" class="form-select" required>
+                        <option value="" disabled selected>-- Select Emergency Category --</option>
+                        <option value="Accident">Accident (Traffic / Collision)</option>
+                        <option value="Medical Emergency">Medical Emergency (Cardiac, Trauma, Stroke)</option>
+                        <option value="Fire">Fire (Building, Electrical, Wildfire)</option>
+                        <option value="Rescue">Rescue (Flooding, Trapped, Heights)</option>
+                        <option value="Other">Other (Obstruction, Hazard, Public Safety)</option>
+                    </select>
+                </div>
+
+                <!-- Caller Name -->
+                <div class="form-group">
+                    <label for="name">
+                        <i class="fa-solid fa-user"></i> Caller / Patient Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Karthik Raja" required>
+                </div>
+
+                <!-- Phone Number -->
+                <div class="form-group">
+                    <label for="phone">
+                        <i class="fa-solid fa-phone"></i> Emergency Contact Phone <span class="required">*</span>
+                    </label>
+                    <input type="tel" id="phone" name="phone" class="form-control" placeholder="e.g. 9876543210" required>
+                </div>
+
+                <!-- Location -->
+                <div class="form-group full-width">
+                    <label for="location">
+                        <i class="fa-solid fa-location-dot"></i> Exact Incident Location <span class="required">*</span>
+                    </label>
+                    <input type="text" id="location" name="location" class="form-control" placeholder="e.g. 2nd Avenue, Near Roundtana, Anna Nagar, Chennai" required>
+                </div>
+
+                <!-- Priority Selector with Visual Badges -->
+                <div class="form-group full-width">
+                    <label>
+                        <i class="fa-solid fa-gauge-high"></i> Priority Level (Determines Queue Placement) <span class="required">*</span>
+                    </label>
+                    <div class="priority-options">
+                        <label class="priority-radio-card p1-card">
+                            <input type="radio" name="priority" value="1" required checked>
+                            <div class="priority-card-content">
+                                <div class="p-top">
+                                    <span class="p-badge badge-p1">Priority 1</span>
+                                    <span class="p-name">CRITICAL</span>
+                                </div>
+                                <div class="p-desc">Immediate life threat (Accident, severe cardiac, massive fire)</div>
+                            </div>
+                        </label>
+
+                        <label class="priority-radio-card p2-card">
+                            <input type="radio" name="priority" value="2">
+                            <div class="priority-card-content">
+                                <div class="p-top">
+                                    <span class="p-badge badge-p2">Priority 2</span>
+                                    <span class="p-name">HIGH</span>
+                                </div>
+                                <div class="p-desc">Severe condition requiring prompt dispatch (Fractures, bleeding)</div>
+                            </div>
+                        </label>
+
+                        <label class="priority-radio-card p3-card">
+                            <input type="radio" name="priority" value="3">
+                            <div class="priority-card-content">
+                                <div class="p-top">
+                                    <span class="p-badge badge-p3">Priority 3</span>
+                                    <span class="p-name">MEDIUM</span>
+                                </div>
+                                <div class="p-desc">Stable emergencies (Mild asthma, non-life-threatening rescue)</div>
+                            </div>
+                        </label>
+
+                        <label class="priority-radio-card p4-card">
+                            <input type="radio" name="priority" value="4">
+                            <div class="priority-card-content">
+                                <div class="p-top">
+                                    <span class="p-badge badge-p4">Priority 4</span>
+                                    <span class="p-name">LOW</span>
+                                </div>
+                                <div class="p-desc">Minor hazards, fallen trees, non-urgent assistance</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="form-group full-width">
+                    <label for="description">
+                        <i class="fa-solid fa-align-left"></i> Incident Description & Details
+                    </label>
+                    <textarea id="description" name="description" class="form-control" rows="3" placeholder="Provide additional triage notes, number of injured, access obstacles..."></textarea>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-emergency-lg">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Emergency Request
+                </button>
+                <button type="reset" class="btn btn-secondary">
+                    <i class="fa-solid fa-rotate-left"></i> Reset Form
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Live Help / Queue Insight Card -->
+    <div class="info-sidebar-card">
+        <div class="sidebar-info-box">
+            <h4><i class="fa-solid fa-circle-info text-primary"></i> How Placement Works</h4>
+            <p>
+                When you click <strong>Submit</strong>, the Flask backend validates the incident and invokes 
+                <code>priority_queue.add_request()</code>.
+            </p>
+            <ul class="concept-bullets">
+                <li><strong>Priority 1 (Critical)</strong> jumps directly ahead of Priority 2, 3, and 4.</li>
+                <li>If there are other Priority 1 emergencies already waiting, arrival order is strictly maintained (FIFO).</li>
+                <li>The record is saved to MySQL table <code>emergency_requests</code> with status <code>'Pending'</code>.</li>
+            </ul>
+        </div>
+
+        <div class="sidebar-viva-box">
+            <h4><i class="fa-solid fa-graduation-cap text-warning"></i> Viva Note</h4>
+            <p>
+                Professors will ask why Priority 1 is at index 0. You can explain that lower numerical integers represent 
+                higher urgency levels, minimizing human sorting errors.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

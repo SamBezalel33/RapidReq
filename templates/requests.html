@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency Requests - RAPIDREQ{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title"><i class="fa-solid fa-list-check text-primary"></i> Emergency Requests Database</h2>
+        <p class="page-subtitle">Historical and active emergency request log with multi-criteria filtering.</p>
+    </div>
+    <div class="header-controls">
+        <a href="{{ url_for('submit_request') }}" class="btn btn-emergency">
+            <i class="fa-solid fa-plus"></i> New Incident
+        </a>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card filter-card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('requests_page') }}" class="filter-form">
+            <div class="filter-grid">
+                <!-- Priority Filter -->
+                <div class="filter-item">
+                    <label for="priorityFilter"><i class="fa-solid fa-arrow-down-1-9"></i> Filter by Priority</label>
+                    <select name="priority" id="priorityFilter" class="form-select">
+                        <option value="">All Priorities</option>
+                        <option value="1" {% if current_priority == '1' %}selected{% endif %}>Priority 1 - Critical</option>
+                        <option value="2" {% if current_priority == '2' %}selected{% endif %}>Priority 2 - High</option>
+                        <option value="3" {% if current_priority == '3' %}selected{% endif %}>Priority 3 - Medium</option>
+                        <option value="4" {% if current_priority == '4' %}selected{% endif %}>Priority 4 - Low</option>
+                    </select>
+                </div>
+
+                <!-- Emergency Type Filter -->
+                <div class="filter-item">
+                    <label for="typeFilter"><i class="fa-solid fa-truck-medical"></i> Emergency Type</label>
+                    <select name="type" id="typeFilter" class="form-select">
+                        <option value="">All Categories</option>
+                        <option value="Accident" {% if current_type == 'Accident' %}selected{% endif %}>Accident</option>
+                        <option value="Medical Emergency" {% if current_type == 'Medical Emergency' %}selected{% endif %}>Medical Emergency</option>
+                        <option value="Fire" {% if current_type == 'Fire' %}selected{% endif %}>Fire</option>
+                        <option value="Rescue" {% if current_type == 'Rescue' %}selected{% endif %}>Rescue</option>
+                        <option value="Other" {% if current_type == 'Other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="filter-item">
+                    <label for="statusFilter"><i class="fa-solid fa-traffic-light"></i> Incident Status</label>
+                    <select name="status" id="statusFilter" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="Pending" {% if current_status == 'Pending' %}selected{% endif %}>Pending (In Queue)</option>
+                        <option value="Dispatched" {% if current_status == 'Dispatched' %}selected{% endif %}>Dispatched (Active)</option>
+                        <option value="Completed" {% if current_status == 'Completed' %}selected{% endif %}>Completed (Resolved)</option>
+                    </select>
+                </div>
+
+                <!-- Filter Actions -->
+                <div class="filter-item filter-btn-col">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fa-solid fa-filter"></i> Apply Filters
+                    </button>
+                    <a href="{{ url_for('requests_page') }}" class="btn btn-secondary w-100 mt-1">
+                        <i class="fa-solid fa-xmark"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Requests Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="card-title">
+            <i class="fa-solid fa-database text-muted"></i> Incident Records 
+            <span class="badge badge-secondary ms-2">{{ requests|length }} Records</span>
+        </h4>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table-rapidreq">
+                <thead>
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Caller Name</th>
+                        <th>Emergency Type</th>
+                        <th>Location</th>
+                        <th>Priority</th>
+                        <th>Request Time</th>
+                        <th>Dispatch Time</th>
+                        <th>Response Time</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if requests %}
+                        {% for r in requests %}
+                            <tr class="status-row-{{ r.status|lower }}">
+                                <td class="fw-bold font-mono text-primary">{{ r.request_id }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ r.name }}</div>
+                                    <small class="text-muted"><i class="fa-solid fa-phone fa-xs"></i> {{ r.phone }}</small>
+                                </td>
+                                <td>
+                                    <span class="type-pill type-{{ r.emergency_type|lower|replace(' ', '-') }}">
+                                        {{ r.emergency_type }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="location-truncate" title="{{ r.location }}">
+                                        <i class="fa-solid fa-location-dot fa-xs text-danger"></i> {{ r.location }}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if r.priority == 1 %}
+                                        <span class="badge badge-p1"><i class="fa-solid fa-circle-exclamation"></i> Critical (1)</span>
+                                    {% elif r.priority == 2 %}
+                                        <span class="badge badge-p2">High (2)</span>
+                                    {% elif r.priority == 3 %}
+                                        <span class="badge badge-p3">Medium (3)</span>
+                                    {% else %}
+                                        <span class="badge badge-p4">Low (4)</span>
+                                    {% endif %}
+                                </td>
+                                <td class="font-mono small">{{ r.request_time }}</td>
+                                <td class="font-mono small">
+                                    {% if r.dispatch_time %}
+                                        {{ r.dispatch_time }}
+                                    {% else %}
+                                        <span class="text-muted">&mdash;</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.response_time is not none %}
+                                        <span class="response-time-tag">
+                                            <i class="fa-solid fa-stopwatch"></i> {{ r.response_time }}s
+                                            <small class="text-muted">({{ (r.response_time / 60)|round(1) }}m)</small>
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">&mdash;</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.status == 'Pending' %}
+                                        <span class="status-badge status-pending">
+                                            <i class="fa-solid fa-clock"></i> Pending
+                                        </span>
+                                    {% elif r.status == 'Dispatched' %}
+                                        <span class="status-badge status-dispatched">
+                                            <i class="fa-solid fa-truck-fast"></i> Dispatched
+                                        </span>
+                                    {% else %}
+                                        <span class="status-badge status-completed">
+                                            <i class="fa-solid fa-circle-check"></i> Completed
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="action-buttons-group">
+                                        <a href="{{ url_for('request_details', request_id=r.request_id) }}" class="btn btn-icon btn-outline-info" title="View Incident Details">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
+
+                                        {% if r.status == 'Pending' %}
+                                            <form action="{{ url_for('dispatch_next') }}" method="POST" style="display:inline;">
+                                                <button type="submit" class="btn btn-icon btn-outline-success" title="Dispatch via Priority Queue">
+                                                    <i class="fa-solid fa-truck-fast"></i>
+                                                </button>
+                                            </form>
+                                        {% elif r.status == 'Dispatched' %}
+                                            <a href="{{ url_for('complete_request', request_id=r.request_id) }}" class="btn btn-icon btn-outline-success" onclick="return confirm('Mark emergency {{ r.request_id }} as completed?');" title="Mark as Completed">
+                                                <i class="fa-solid fa-check"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-inbox fa-2x mb-2 d-block"></i>
+                                No emergency requests matched your selected filters.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

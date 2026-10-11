@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Incident Details: {{ req.request_id }} - RAPIDREQ{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title">
+            <i class="fa-solid fa-file-waveform text-primary"></i> Incident Details: {{ req.request_id }}
+        </h2>
+        <p class="page-subtitle">Full forensic emergency profile, timeline, and dispatch telemetry.</p>
+    </div>
+    <div class="header-controls">
+        <a href="{{ url_for('requests_page') }}" class="btn btn-secondary">
+            <i class="fa-solid fa-arrow-left"></i> All Requests
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+            <i class="fa-solid fa-gauge-high"></i> Dispatch Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="grid-details-layout">
+    <!-- Left Column: Core Data Sheet -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title">
+                <i class="fa-solid fa-id-card text-muted"></i> Incident Dossier
+            </h3>
+            <span class="status-badge status-{{ req.status|lower }}">
+                {{ req.status }}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="detail-rows">
+                <div class="detail-row">
+                    <span class="detail-label">Request Identifier</span>
+                    <span class="detail-value font-mono fw-bold text-primary">{{ req.request_id }}</span>
+                </div>
+
+                <div class="detail-row">
+                    <span class="detail-label">Priority Level</span>
+                    <span class="detail-value">
+                        {% if req.priority == 1 %}
+                            <span class="badge badge-p1"><i class="fa-solid fa-circle-exclamation"></i> Critical (Priority 1)</span>
+                        {% elif req.priority == 2 %}
+                            <span class="badge badge-p2">High (Priority 2)</span>
+                        {% elif req.priority == 3 %}
+                            <span class="badge badge-p3">Medium (Priority 3)</span>
+                        {% else %}
+                            <span class="badge badge-p4">Low (Priority 4)</span>
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="detail-row">
+                    <span class="detail-label">Emergency Category</span>
+                    <span class="detail-value">
+                        <span class="type-pill type-{{ req.emergency_type|lower|replace(' ', '-') }}">
+                            {{ req.emergency_type }}
+                        </span>
+                    </span>
+                </div>
+
+                <div class="detail-row">
+                    <span class="detail-label">Reporting Caller</span>
+                    <span class="detail-value fw-semibold">{{ req.name }}</span>
+                </div>
+
+                <div class="detail-row">
+                    <span class="detail-label">Emergency Phone</span>
+                    <span class="detail-value font-mono">{{ req.phone }}</span>
+                </div>
+
+                <div class="detail-row">
+                    <span class="detail-label">Incident Location</span>
+                    <span class="detail-value"><i class="fa-solid fa-location-dot text-danger"></i> {{ req.location }}</span>
+                </div>
+
+                <div class="detail-row full">
+                    <span class="detail-label">Incident Description</span>
+                    <div class="detail-box">
+                        {{ req.description or "No additional description provided by caller." }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contextual Actions -->
+            <div class="detail-actions mt-4">
+                {% if req.status == 'Pending' %}
+                    <form action="{{ url_for('dispatch_next') }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa-solid fa-truck-fast"></i> Dispatch from Priority Queue
+                        </button>
+                    </form>
+                {% elif req.status == 'Dispatched' %}
+                    <a href="{{ url_for('complete_request', request_id=req.request_id) }}" class="btn btn-primary" onclick="return confirm('Confirm resolution for incident {{ req.request_id }}?');">
+                        <i class="fa-solid fa-circle-check"></i> Mark as Completed
+                    </a>
+                {% else %}
+                    <span class="text-success fw-bold"><i class="fa-solid fa-circle-check"></i> Emergency successfully resolved.</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Timeline & Response Telemetry -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fa-solid fa-clock-rotate-left text-warning"></i> Lifecycle Telemetry
+            </h3>
+        </div>
+        <div class="card-body">
+            <!-- Timeline Visual -->
+            <div class="timeline-visual">
+                <!-- Step 1: Intake -->
+                <div class="timeline-item completed">
+                    <div class="timeline-marker"><i class="fa-solid fa-phone"></i></div>
+                    <div class="timeline-content">
+                        <h4>Request Received</h4>
+                        <div class="time-stamp font-mono">{{ req.request_time }}</div>
+                        <p>Added to Priority Queue and stored in MySQL.</p>
+                    </div>
+                </div>
+
+                <!-- Step 2: Dispatch -->
+                <div class="timeline-item {% if req.dispatch_time %}completed{% elif req.status == 'Pending' %}active{% endif %}">
+                    <div class="timeline-marker"><i class="fa-solid fa-truck-medical"></i></div>
+                    <div class="timeline-content">
+                        <h4>Unit Dispatched</h4>
+                        {% if req.dispatch_time %}
+                            <div class="time-stamp font-mono">{{ req.dispatch_time }}</div>
+                            <div class="metric-highlight">
+                                <strong>Response Time:</strong> {{ req.response_time }} seconds 
+                                <small>({{ (req.response_time / 60)|round(1) }} min)</small>
+                            </div>
+                        {% else %}
+                            <span class="text-muted">Awaiting Dispatch from Priority Queue</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Step 3: Resolved -->
+                <div class="timeline-item {% if req.completion_time %}completed{% endif %}">
+                    <div class="timeline-marker"><i class="fa-solid fa-check"></i></div>
+                    <div class="timeline-content">
+                        <h4>Emergency Resolved</h4>
+                        {% if req.completion_time %}
+                            <div class="time-stamp font-mono">{{ req.completion_time }}</div>
+                            <p>Unit cleared and incident closed.</p>
+                        {% else %}
+                            <span class="text-muted">Incident in progress</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Academic Note Card -->
+            <div class="academic-note-inner mt-4">
+                <h5><i class="fa-solid fa-calculator text-primary"></i> Response Time Metric</h5>
+                <p>
+                    $$\text{Response Time} = \text{dispatch\_time} - \text{request\_time}$$
+                </p>
+                <p class="small text-muted mb-0">
+                    Calculated dynamically in Python backend when dispatcher triggers the priority queue dequeue operation.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

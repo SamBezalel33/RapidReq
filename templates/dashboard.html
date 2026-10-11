@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Dispatcher Dashboard - RAPIDREQ{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title">
+            <i class="fa-solid fa-tower-broadcast text-danger"></i> Dispatcher Live Control Room
+        </h2>
+        <p class="page-subtitle">Real-Time Priority Queue Monitoring & Emergency Vehicle Dispatch</p>
+    </div>
+    <div class="header-controls">
+        <a href="{{ url_for('submit_request') }}" class="btn btn-emergency">
+            <i class="fa-solid fa-plus"></i> New Emergency
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" title="Refresh Live Queue">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+        </a>
+    </div>
+</div>
+
+<!-- KPI Metric Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon icon-total"><i class="fa-solid fa-folder-open"></i></div>
+        <div class="stat-info">
+            <span class="stat-value" id="kpi-total">{{ summary.total }}</span>
+            <span class="stat-label">Total Requests</span>
+        </div>
+    </div>
+
+    <div class="stat-card highlight-card">
+        <div class="stat-icon icon-pending"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="stat-info">
+            <span class="stat-value" id="kpi-pending">{{ summary.pending }}</span>
+            <span class="stat-label">Waiting In Priority Queue</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon icon-dispatched"><i class="fa-solid fa-truck-medical"></i></div>
+        <div class="stat-info">
+            <span class="stat-value" id="kpi-dispatched">{{ summary.dispatched }}</span>
+            <span class="stat-label">Dispatched (En Route)</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon icon-completed"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-info">
+            <span class="stat-value" id="kpi-completed">{{ summary.completed }}</span>
+            <span class="stat-label">Resolved / Completed</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon icon-response"><i class="fa-solid fa-stopwatch"></i></div>
+        <div class="stat-info">
+            <span class="stat-value" id="kpi-response">{{ summary.avg_response_time }}s</span>
+            <span class="stat-label">Avg Response Time</span>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN DISPATCH ACTION HERO SECTION -->
+<div class="dispatch-action-card">
+    <div class="dispatch-action-left">
+        <div class="dispatch-tag">
+            <span class="pulse-beacon-sm"></span> NEXT IMMEDIATE DISPATCH CANDIDATE
+        </div>
+
+        {% if next_request %}
+            <div class="next-candidate-details">
+                <div class="candidate-header">
+                    <span class="candidate-id">{{ next_request.request_id }}</span>
+                    <span class="candidate-badge badge-p{{ next_request.priority }}">
+                        🔴 Priority {{ next_request.priority }} &bull; {{ next_request.priority_label }}
+                    </span>
+                    <span class="candidate-type">{{ next_request.emergency_type }}</span>
+                </div>
+                <div class="candidate-body">
+                    <div class="c-field"><i class="fa-solid fa-user"></i> <strong>Caller:</strong> {{ next_request.name }} ({{ next_request.phone }})</div>
+                    <div class="c-field"><i class="fa-solid fa-location-dot"></i> <strong>Location:</strong> {{ next_request.location }}</div>
+                    <div class="c-field"><i class="fa-solid fa-clock"></i> <strong>Reported At:</strong> {{ next_request.request_time }}</div>
+                    {% if next_request.description %}
+                        <div class="c-desc"><i class="fa-solid fa-comment-medical"></i> "{{ next_request.description }}"</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="candidate-empty">
+                <i class="fa-solid fa-circle-check fa-3x text-success"></i>
+                <div class="empty-title">All Emergencies Dispatched!</div>
+                <p>The priority queue is currently idle. No pending emergency requests waiting.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="dispatch-action-right">
+        {% if next_request %}
+            <form action="{{ url_for('dispatch_next') }}" method="POST">
+                <button type="submit" class="btn-dispatch-pulse" id="btnDispatchNext">
+                    <div class="dispatch-btn-icon"><i class="fa-solid fa-truck-fast"></i></div>
+                    <div class="dispatch-btn-content">
+                        <span class="dispatch-btn-title">DISPATCH NEXT</span>
+                        <span class="dispatch-btn-sub">Pops Highest Priority ({{ next_request.request_id }})</span>
+                    </div>
+                </button>
+            </form>
+            <div class="dispatch-meta-note">
+                <i class="fa-solid fa-bolt text-warning"></i> Executes <code>priority_queue.dispatch_next()</code>
+            </div>
+        {% else %}
+            <button class="btn-dispatch-pulse disabled" disabled>
+                <div class="dispatch-btn-icon"><i class="fa-solid fa-ban"></i></div>
+                <div class="dispatch-btn-content">
+                    <span class="dispatch-btn-title">QUEUE EMPTY</span>
+                    <span class="dispatch-btn-sub">No Requests Pending</span>
+                </div>
+            </button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- CURRENT PRIORITY QUEUE SECTION -->
+<div class="card mt-4">
+    <div class="card-header queue-header-bar">
+        <div>
+            <h3 class="card-title">
+                <i class="fa-solid fa-list-ol text-danger"></i> CURRENT PRIORITY QUEUE
+                <span class="queue-counter-badge">{{ queue_size }} Pending</span>
+            </h3>
+            <p class="card-subtitle">
+                Explicit In-Memory Data Structure Order (Primary Key: Urgency P1 &gt; P2 &gt; P3 &gt; P4; Secondary Key: Arrival Order FIFO)
+            </p>
+        </div>
+        <div class="queue-order-legend">
+            <span class="legend-chip chip-p1">🔴 Critical (P1)</span>
+            <span class="legend-chip chip-p2">🟠 High (P2)</span>
+            <span class="legend-chip chip-p3">🟡 Medium (P3)</span>
+            <span class="legend-chip chip-p4">🟢 Low (P4)</span>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        {% if queue %}
+            <div class="priority-queue-visual-list">
+                {% for item in queue %}
+                    <div class="pq-card {% if loop.first %}pq-card-next{% endif %} priority-theme-{{ item.priority }}">
+                        <div class="pq-position-col">
+                            {% if loop.first %}
+                                <div class="pq-next-tag">NEXT UP</div>
+                            {% endif %}
+                            <div class="pq-rank">#{{ loop.index }}</div>
+                            <div class="pq-arrival-tag">Seq: {{ item.arrival_order }}</div>
+                        </div>
+
+                        <div class="pq-id-col">
+                            <span class="pq-id">{{ item.request_id }}</span>
+                            <span class="pq-indicator pq-dot-p{{ item.priority }}"></span>
+                        </div>
+
+                        <div class="pq-type-col">
+                            <div class="pq-type-name">{{ item.emergency_type }}</div>
+                            <div class="pq-location"><i class="fa-solid fa-location-dot"></i> {{ item.location }}</div>
+                        </div>
+
+                        <div class="pq-caller-col">
+                            <div class="pq-name"><i class="fa-solid fa-user"></i> {{ item.name }}</div>
+                            <div class="pq-phone"><i class="fa-solid fa-phone"></i> {{ item.phone }}</div>
+                        </div>
+
+                        <div class="pq-priority-col">
+                            <span class="badge badge-p{{ item.priority }} badge-lg">
+                                Priority {{ item.priority }} &bull; {{ item.priority_label }}
+                            </span>
+                            <div class="pq-time"><i class="fa-solid fa-clock"></i> {{ item.request_time }}</div>
+                        </div>
+
+                        <div class="pq-action-col">
+                            {% if loop.first %}
+                                <form action="{{ url_for('dispatch_next') }}" method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-success" title="Dispatch this emergency immediately">
+                                        <i class="fa-solid fa-truck-fast"></i> Dispatch
+                                    </button>
+                                </form>
+                            {% endif %}
+                            <a href="{{ url_for('request_details', request_id=item.request_id) }}" class="btn btn-sm btn-outline-info" title="View Incident Details">
+                                <i class="fa-solid fa-eye"></i> Details
+                            </a>
+                            <a href="{{ url_for('complete_request', request_id=item.request_id) }}" class="btn btn-sm btn-outline-secondary" onclick="return confirm('Directly resolve request {{ item.request_id }}?');" title="Resolve / Complete">
+                                <i class="fa-solid fa-check"></i>
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state p-5">
+                <i class="fa-solid fa-inbox fa-3x text-muted mb-3"></i>
+                <h4>Priority Queue is Empty</h4>
+                <p>No emergency requests are awaiting dispatch. Submit a new emergency or click below to load the Viva test cases.</p>
+                <div class="mt-3">
+                    <a href="{{ url_for('submit_request') }}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Submit Emergency</a>
+                    <a href="{{ url_for('reset_demo_queue') }}" class="btn btn-secondary ms-2"><i class="fa-solid fa-flask-vial"></i> Load Viva Demo Queue</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Embedded Preview of Analytics Charts -->
+<div class="grid-2-col mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title"><i class="fa-solid fa-chart-column text-primary"></i> Requests by Emergency Type</h4>
+            <a href="{{ url_for('analytics_page') }}" class="card-link">Full Analytics &rarr;</a>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="height: 260px;">
+                <canvas id="typeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title"><i class="fa-solid fa-chart-pie text-warning"></i> Priority Distribution</h4>
+            <a href="{{ url_for('analytics_page') }}" class="card-link">Full Analytics &rarr;</a>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="height: 260px;">
+                <canvas id="priorityChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize Dashboard Charts
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof RapidReqDashboard !== "undefined") {
+            RapidReqDashboard.initCharts({ previewOnly: true });
+        }
+    });
+</script>
+{% endblock %}

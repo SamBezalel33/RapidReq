@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics & Charts - RAPIDREQ{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title"><i class="fa-solid fa-chart-line text-primary"></i> Emergency Analytics & Telemetry</h2>
+        <p class="page-subtitle">Real-time visualizations powered by Chart.js aggregating live records from MySQL.</p>
+    </div>
+    <div class="header-controls">
+        <button class="btn btn-secondary" onclick="RapidReqDashboard.refreshAllCharts();">
+            <i class="fa-solid fa-rotate"></i> Refresh Analytics
+        </button>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+            <i class="fa-solid fa-gauge-high"></i> Live Dispatch
+        </a>
+    </div>
+</div>
+
+<!-- KPI Mini Banner -->
+<div class="stats-grid mb-4">
+    <div class="stat-card">
+        <div class="stat-icon icon-total"><i class="fa-solid fa-database"></i></div>
+        <div class="stat-info">
+            <span class="stat-value">{{ summary.total }}</span>
+            <span class="stat-label">Total Logged Records</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon icon-pending"><i class="fa-solid fa-clock"></i></div>
+        <div class="stat-info">
+            <span class="stat-value">{{ summary.pending }}</span>
+            <span class="stat-label">Pending in Queue</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon icon-dispatched"><i class="fa-solid fa-truck-fast"></i></div>
+        <div class="stat-info">
+            <span class="stat-value">{{ summary.dispatched }}</span>
+            <span class="stat-label">Dispatched Active</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon icon-completed"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-info">
+            <span class="stat-value">{{ summary.completed }}</span>
+            <span class="stat-label">Completed</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon icon-response"><i class="fa-solid fa-stopwatch"></i></div>
+        <div class="stat-info">
+            <span class="stat-value">{{ summary.avg_response_time }}s</span>
+            <span class="stat-label">System Avg Response</span>
+        </div>
+    </div>
+</div>
+
+<!-- 4 Charts Grid Required by Project Specification -->
+<div class="analytics-charts-grid">
+    <!-- Chart 1: Requests by Type (Bar Chart) -->
+    <div class="card chart-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="card-title">
+                    <i class="fa-solid fa-chart-column text-primary"></i> 1. Emergency Requests by Type
+                </h4>
+                <p class="chart-subtitle">Distribution across accident, medical, fire, rescue, and other emergencies</p>
+            </div>
+            <span class="badge badge-primary">Bar Chart</span>
+        </div>
+        <div class="card-body">
+            <div class="chart-wrapper">
+                <canvas id="typeChartFull"></canvas>
+            </div>
+            <div class="chart-explanation">
+                <i class="fa-solid fa-circle-info text-muted"></i>
+                Identifies which incident categories generate the highest emergency volume for vehicle allocation.
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 2: Priority Distribution (Doughnut Chart) -->
+    <div class="card chart-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="card-title">
+                    <i class="fa-solid fa-chart-pie text-warning"></i> 2. Priority Distribution
+                </h4>
+                <p class="chart-subtitle">Proportion of Critical (P1), High (P2), Medium (P3), and Low (P4) cases</p>
+            </div>
+            <span class="badge badge-warning">Doughnut Chart</span>
+        </div>
+        <div class="card-body">
+            <div class="chart-wrapper">
+                <canvas id="priorityChartFull"></canvas>
+            </div>
+            <div class="chart-explanation">
+                <i class="fa-solid fa-circle-info text-muted"></i>
+                Demonstrates why priority queueing is necessary: Critical cases must leapfrog low-urgency cases.
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 3: Requests by Hour (Line Chart) -->
+    <div class="card chart-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="card-title">
+                    <i class="fa-solid fa-chart-line text-success"></i> 3. Requests by Hour of the Day
+                </h4>
+                <p class="chart-subtitle">Incident volume pattern across hourly operational periods</p>
+            </div>
+            <span class="badge badge-success">Line Chart</span>
+        </div>
+        <div class="card-body">
+            <div class="chart-wrapper">
+                <canvas id="hourlyChartFull"></canvas>
+            </div>
+            <div class="chart-explanation">
+                <i class="fa-solid fa-circle-info text-muted"></i>
+                Reveals peak emergency surge windows to optimize staffing and ambulance dispatch readiness.
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 4: Average Response Time by Priority (Bar Chart) -->
+    <div class="card chart-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="card-title">
+                    <i class="fa-solid fa-stopwatch text-danger"></i> 4. Average Response Time by Priority
+                </h4>
+                <p class="chart-subtitle">Evaluates if Critical (P1) cases achieve faster dispatch than Low (P4) cases</p>
+            </div>
+            <span class="badge badge-danger">Bar Chart</span>
+        </div>
+        <div class="card-body">
+            <div class="chart-wrapper">
+                <canvas id="responseTimeChartFull"></canvas>
+            </div>
+            <div class="chart-explanation">
+                <i class="fa-solid fa-circle-info text-muted"></i>
+                Academic Proof: Demonstrates that the Priority Queue successfully minimizes response times for P1 & P2.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof RapidReqDashboard !== "undefined") {
+            RapidReqDashboard.initCharts({ previewOnly: false });
+        }
+    });
+</script>
+{% endblock %}
